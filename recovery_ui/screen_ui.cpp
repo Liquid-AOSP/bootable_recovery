@@ -804,33 +804,27 @@ void ScreenRecoveryUI::draw_menu_and_text_buffer_locked(
   int y = margin_height_;
 
   if (menu_) {
-    int x = margin_width_ + kMenuIndent;
+    auto& logo = fastbootd_logo_enabled_ ? fastbootd_logo_ : liquid_logo_;
+    auto logo_width = gr_get_width(logo.get());
+    auto logo_height = gr_get_height(logo.get());
+    auto centered_x = ScreenWidth() / 2 - logo_width / 2;
+    DrawSurface(logo.get(), 0, 0, logo_width, logo_height, centered_x, y);
+    y += logo_height;
 
-    SetColor(UIElement::INFO);
-
-    auto& logo = fastbootd_logo_enabled_ ? fastbootd_logo_ : awaken_logo_;
-    if (logo && back_icon_) {
-      auto logo_width = gr_get_width(logo.get());
-      auto logo_height = gr_get_height(logo.get());
-      auto centered_x = ScreenWidth() / 2 - logo_width / 2;
-      DrawSurface(logo.get(), 0, 0, logo_width, logo_height, centered_x, y);
-      y += logo_height;
-
-      if (!menu_->IsMain()) {
-        auto icon_w = gr_get_width(back_icon_.get());
-        auto icon_h = gr_get_height(back_icon_.get());
-        auto icon_x = centered_x / 2 - icon_w / 2;
-        auto icon_y = y - logo_height / 2 - icon_h / 2;
-        gr_blit(back_icon_sel_ && menu_->selection() == -1 ? back_icon_sel_.get() : back_icon_.get(),
-                0, 0, icon_w, icon_h, icon_x, icon_y);
-      }
-      y += MenuItemPadding();
-    } else {
-      for (size_t i = 0; i < title_lines_.size(); i++) {
-        y += DrawTextLine(x, y, title_lines_[i], i == 0);
-      }
+    if (!menu_->IsMain()) {
+      auto icon_w = gr_get_width(back_icon_.get());
+      auto icon_h = gr_get_height(back_icon_.get());
+      auto icon_x = centered_x / 2 - icon_w / 2;
+      auto icon_y = y - logo_height / 2 - icon_h / 2;
+      gr_blit(back_icon_sel_ && menu_->selection() == -1 ? back_icon_sel_.get() : back_icon_.get(),
+              0, 0, icon_w, icon_h, icon_x, icon_y);
     }
 
+    int x = margin_width_ + kMenuIndent;
+    if (!title_lines_.empty()) {
+      SetColor(UIElement::INFO);
+      y += DrawTextLines(x, y, title_lines_);
+    }
     y += menu_->DrawHeader(x, y);
     menu_start_y_ = y + 12; // Skip horizontal rule and some margin
     menu_->SetMenuHeight(std::max(0, ScreenHeight() - menu_start_y_));
@@ -1055,10 +1049,10 @@ bool ScreenRecoveryUI::Init(const std::string& locale) {
   back_icon_sel_ = LoadBitmap("ic_back_sel");
   if (android::base::GetBoolProperty("ro.boot.dynamic_partitions", false) ||
       android::base::GetBoolProperty("ro.fastbootd.available", false)) {
-    awaken_logo_ = LoadBitmap("logo_image_switch");
+    liquid_logo_ = LoadBitmap("logo_image_switch");
     fastbootd_logo_ = LoadBitmap("fastbootd");
   } else {
-    awaken_logo_ = LoadBitmap("logo_image");
+    liquid_logo_ = LoadBitmap("logo_image");
   }
 
   // Background text for "installing_update" could be "installing update" or
@@ -1354,8 +1348,8 @@ int ScreenRecoveryUI::SelectMenu(const Point& point) {
   if (menu_) {
     if (!menu_->IsMain()) {
       // Back arrow hitbox
-      const static int logo_width = gr_get_width(awaken_logo_.get());
-      const static int logo_height = gr_get_height(awaken_logo_.get());
+      const static int logo_width = gr_get_width(liquid_logo_.get());
+      const static int logo_height = gr_get_height(liquid_logo_.get());
       const static int icon_w = gr_get_width(back_icon_.get());
       const static int icon_h = gr_get_height(back_icon_.get());
       const static int centered_x = ScreenWidth() / 2 - logo_width / 2;
